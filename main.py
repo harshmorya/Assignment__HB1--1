@@ -40,18 +40,6 @@ import cv2
 from skimage.metrics import mean_squared_error, structural_similarity as ssim
 import torchvision.transforms as transforms
 
-# Function to normalize depth maps
-def normalize_depth(depth_map):
-    """Normalize a depth map to a range of [0, 1]."""
-    min_val = np.min(depth_map)
-    max_val = np.max(depth_map)
-    return (depth_map - min_val) / (max_val - min_val) if max_val > min_val else np.zeros_like(depth_map)
-
-# Load the MiDaS depth estimation model
-def load_depth_model():
-    model = torch.hub.load("intel-isl/MiDaS", "DPT_Large")
-    model.eval()
-    return model.to(torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
 
 # Image transformation for the model
 def get_image_transform():
@@ -59,6 +47,20 @@ def get_image_transform():
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
+
+# Load the MiDaS depth estimation model
+def load_depth_model():
+    model = torch.hub.load("intel-isl/MiDaS", "DPT_Large")
+    model.eval()
+    return model.to(torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
+
+
+# Function to normalize depth maps
+def normalize_depth(depth_map):
+    """Normalize a depth map to a range of [0, 1]."""
+    min_val = np.min(depth_map)
+    max_val = np.max(depth_map)
+    return (depth_map - min_val) / (max_val - min_val) if max_val > min_val else np.zeros_like(depth_map)
 
 # Estimate depth from an image
 def estimate_image_depth(image_path, model, transform):
@@ -76,15 +78,8 @@ def estimate_image_depth(image_path, model, transform):
 
     return depth_prediction.squeeze().cpu().numpy()
 
-# Function to generate canny edges
-def generate_canny_edges(image, low_threshold=300, high_threshold=600):
-    """Generate canny edges from the given image."""
-    image_gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
-    edges = cv2.Canny(image_gray, low_threshold, high_threshold)
-    edges_image = Image.fromarray(edges).convert("RGB")  # Convert edges back to RGB to be used in the pipeline
-    return edges_image
 
-
+#Resize the image to a different aspect ratio
 def resize_image_to_aspect_ratio(image_path, aspect_ratio):
     """Resize the image to the desired aspect ratio."""
     image = Image.open(image_path)
@@ -103,11 +98,24 @@ def resize_image_to_aspect_ratio(image_path, aspect_ratio):
 
     return image.resize(new_size)
 
+
+# Function to generate canny edges
+def generate_canny_edges(image, low_threshold=300, high_threshold=600):
+    """Generate canny edges from the given image."""
+    image_gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
+    edges = cv2.Canny(image_gray, low_threshold, high_threshold)
+    edges_image = Image.fromarray(edges).convert("RGB")  # Convert edges back to RGB to be used in the pipeline
+    return edges_image
+
+
 def calculate_metrics(original_depth, generated_depth):
     """Calculate MSE and SSIM between original and generated depth maps."""
     mse_value = mean_squared_error(original_depth, generated_depth)
     ssim_value = ssim(original_depth, generated_depth, data_range=generated_depth.max() - generated_depth.min())
     return mse_value, ssim_value
+
+
+
 # List of depth maps (image and .npy files)
 depth_map_paths = [
     "/content/drive/MyDrive/Images/1.png",
@@ -221,7 +229,9 @@ print("\nComparing image generation times for 25 and 50 steps...")
 time_25_steps = end_time - start_time
 
 # Generate images using 50 steps
-start_time_50 = time.time()
+
+
+
 
 if selected_depth_path.endswith("nocrop.png"):
     output_non_square_50 = stable_diffusion(prompt=selected_prompt, image=non_square_depth, generator=seed, num_inference_steps=50)
@@ -251,10 +261,24 @@ if selected_depth_path.endswith("nocrop.png"):
 
     plt.show()
 else:
+
+    start_time_50 = time.time()
     output_50 = stable_diffusion(prompt=selected_prompt, image=depth_image_resized, generator=seed, num_inference_steps=50)
     output_50.images[0].save("generated_image_50_steps.png")
+    end_time_50 = time.time()
+    
+    time_50_steps = end_time_50 - start_time_50
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+    start_time_100 = time.time()
+    output_100 = stable_diffusion(prompt=selected_prompt, image=depth_image_resized, generator=seed, num_inference_steps=100)
+    output_100.images[0].save("generated_image_100_steps.png")
+    end_time_100 = time.time()
+
+    time_100_steps = end_time_100 - start_time_100
+
+
+
+    fig, axes = plt.subplots(1, 3, figsize=(12, 6))
     axes[0].imshow(Image.open("generated_image.png"))
     axes[0].set_title("25 Steps")
     axes[0].axis('off')  # Disable the axis/ruler
@@ -263,11 +287,14 @@ else:
     axes[1].set_title("50 Steps")
     axes[1].axis('off')  # Disable the axis/ruler
 
+    axes[2].imshow(Image.open("generated_image_100_steps.png"))
+    axes[2].set_title("100 Steps")
+    axes[2].axis('off')
+
     plt.show()
 
-end_time_50 = time.time()
-time_50_steps = end_time_50 - start_time_50
+    # Report times
+    print(f"Image generation (25 steps) took {time_25_steps:.2f} seconds.")
+    print(f"Image generation (50 steps) took {time_50_steps:.2f} seconds.")
+    print(f"Image generation (100 steps) took {time_100_steps:.2f} seconds.")
 
-# Report times
-print(f"Image generation (25 steps) took {time_25_steps:.2f} seconds.")
-print(f"Image generation (50 steps) took {time_50_steps:.2f} seconds.")
