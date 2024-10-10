@@ -29,17 +29,15 @@ Original file is located at
 # Install Matplotlib (optional, for plotting images)
 !pip install matplotlib
 
-
 import torch
 from PIL import Image
-from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, DDIMScheduler
+from diffusers import StableDiffusionControlNetPipeline, ControlNetModel, DDIMScheduler, LMSDiscreteScheduler, EulerDiscreteScheduler, PNDMScheduler
 import time
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 from skimage.metrics import mean_squared_error, structural_similarity as ssim
 import torchvision.transforms as transforms
-
 
 # Image transformation for the model
 def get_image_transform():
@@ -53,7 +51,6 @@ def load_depth_model():
     model = torch.hub.load("intel-isl/MiDaS", "DPT_Large")
     model.eval()
     return model.to(torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
-
 
 # Function to normalize depth maps
 def normalize_depth(depth_map):
@@ -78,8 +75,7 @@ def estimate_image_depth(image_path, model, transform):
 
     return depth_prediction.squeeze().cpu().numpy()
 
-
-#Resize the image to a different aspect ratio
+# Resize the image to a different aspect ratio
 def resize_image_to_aspect_ratio(image_path, aspect_ratio):
     """Resize the image to the desired aspect ratio."""
     image = Image.open(image_path)
@@ -98,15 +94,13 @@ def resize_image_to_aspect_ratio(image_path, aspect_ratio):
 
     return image.resize(new_size)
 
-
 # Function to generate canny edges
-def generate_canny_edges(image, low_threshold=300, high_threshold=600):
+def generate_canny_edges(image, low_threshold=2, high_threshold=15):
     """Generate canny edges from the given image."""
     image_gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
     edges = cv2.Canny(image_gray, low_threshold, high_threshold)
     edges_image = Image.fromarray(edges).convert("RGB")  # Convert edges back to RGB to be used in the pipeline
     return edges_image
-
 
 def calculate_metrics(original_depth, generated_depth):
     """Calculate MSE and SSIM between original and generated depth maps."""
@@ -115,7 +109,28 @@ def calculate_metrics(original_depth, generated_depth):
     return mse_value, ssim_value
 
 
+# Function to allow the user to choose the scheduler
+def choose_scheduler(stable_diffusion_pipeline):
+    print("\nAvailable Schedulers:")
+    print("1. DDIMScheduler - High quality, very fast")
+    print("2. PNDMScheduler - Moderate to high quality, moderate speed")
+    print("3. LMSDiscreteScheduler - High quality, moderate speed")
+    print("4. EulerDiscreteScheduler - Moderate to high quality, fast")
+    scheduler_choice = int(input("Select the scheduler number: "))
+    
+    if scheduler_choice == 1:
+        stable_diffusion_pipeline.scheduler = DDIMScheduler.from_config(stable_diffusion_pipeline.scheduler.config)
+    elif scheduler_choice == 2:
+        stable_diffusion_pipeline.scheduler = PNDMScheduler.from_config(stable_diffusion_pipeline.scheduler.config)
+    elif scheduler_choice == 3:
+        stable_diffusion_pipeline.scheduler = LMSDiscreteScheduler.from_config(stable_diffusion_pipeline.scheduler.config)
+    elif scheduler_choice == 4:
+        stable_diffusion_pipeline.scheduler = EulerDiscreteScheduler.from_config(stable_diffusion_pipeline.scheduler.config)
+    else:
+        print("Invalid selection. Defaulting to DDIMScheduler.")
+        stable_diffusion_pipeline.scheduler = DDIMScheduler.from_config(stable_diffusion_pipeline.scheduler.config)
 
+    return stable_diffusion_pipeline
 # List of depth maps (image and .npy files)
 depth_map_paths = [
     "/content/drive/MyDrive/Images/1.png",
@@ -158,7 +173,7 @@ stable_diffusion = StableDiffusionControlNetPipeline.from_pretrained(
 )
 
 # Configure scheduler for faster inference
-stable_diffusion.scheduler = DDIMScheduler.from_config(stable_diffusion.scheduler.config)
+stable_diffusion = choose_scheduler(stable_diffusion)
 stable_diffusion.to("cuda")
 seed = torch.manual_seed(12345)
 
@@ -169,15 +184,12 @@ start_time = time.time()
 if selected_depth_path.endswith("nocrop.png"):
     non_square_depth = Image.open(selected_depth_path).convert("RGB").resize((940, 564))
 
-
     square_depth = resize_image_to_aspect_ratio(selected_depth_path,"1:1")
     depth43 = resize_image_to_aspect_ratio(selected_depth_path,"4:3")
 
     output_non_square = stable_diffusion(prompt=selected_prompt, image=non_square_depth, generator=seed, num_inference_steps=25)
     output_square = stable_diffusion(prompt=selected_prompt, image=square_depth, generator=seed, num_inference_steps=25)
     output_43 = stable_diffusion(prompt=selected_prompt, image=depth43, generator=seed, num_inference_steps=25)
-
-
 
     output_non_square.images[0].save("generated_non_square.png")
     output_square.images[0].save("generated_square.png")
@@ -228,11 +240,67 @@ print(f"Image generation took {end_time - start_time:.2f} seconds.")
 print("\nComparing image generation times for 25 and 50 steps...")
 time_25_steps = end_time - start_time
 
+# Depth map comparison for non-square image
+midas_model = load_depth_model()
+transform = get_image_transform()
+
+if selected_depth_path.endswith("nocrop.png"):
+    # Estimate depth map for the non-square generated image
+    generated_depth_map_non_square = estimate_image_depth("generated_non_square.png", midas_model, transform)
+
+    if generated_depth_map_non_square is not None:
+        input_depth_map_non_square = np.asarray(non_square_depth)
+        if input_depth_map_non_square.shape[2] == 3:
+            input_depth_map_non_square = input_depth_map_non_square[:, :, 0]  # Convert to single channel
+
+        generated_depth_map_non_square_resized = cv2.resize(generated_depth_map_non_square,
+            (input_depth_map_non_square.shape[1], input_depth_map_non_square.shape[0]))
+
+        input_depth_map_non_square_normalized = normalize_depth(input_depth_map_non_square)
+        generated_depth_map_non_square_normalized = normalize_depth(generated_depth_map_non_square_resized)
+
+        # Display the input and generated depth maps side by side
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+        axes[0].imshow(input_depth_map_non_square_normalized, cmap="gray")
+        axes[0].set_title("Input Depth Map (Non-Square)")
+
+        axes[1].imshow(generated_depth_map_non_square_normalized, cmap="gray")
+        axes[1].set_title("Generated Depth Map (Non-Square)")
+        plt.show()
+
+        # Calculate metrics
+        mse_non_square, ssim_non_square = calculate_metrics(input_depth_map_non_square_normalized, generated_depth_map_non_square_normalized)
+        print(f"MSE (Non-Square): {mse_non_square:.4f}")
+        print(f"SSIM (Non-Square): {ssim_non_square:.4f}")
+
+# Depth map comparison for square image
+generated_depth_map = estimate_image_depth("generated_image.png", midas_model, transform)
+
+if generated_depth_map is not None:
+    input_depth_map = np.asarray(depth_image_resized)
+    if input_depth_map.shape[2] == 3:
+        input_depth_map = input_depth_map[:, :, 0]  # Convert to single channel
+
+    generated_depth_map_resized = cv2.resize(generated_depth_map, (input_depth_map.shape[1], input_depth_map.shape[0]))
+
+    input_depth_map_normalized = normalize_depth(input_depth_map)
+    generated_depth_map_normalized = normalize_depth(generated_depth_map_resized)
+
+    # Display the input and generated depth maps side by side
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+    axes[0].imshow(input_depth_map_normalized, cmap="gray")
+    axes[0].set_title("Input Depth Map (Square)")
+
+    axes[1].imshow(generated_depth_map_normalized, cmap="gray")
+    axes[1].set_title("Generated Depth Map (Square)")
+    plt.show()
+
+    # Calculate metrics
+    mse_square, ssim_square = calculate_metrics(input_depth_map_normalized, generated_depth_map_normalized)
+    print(f"MSE (Square): {mse_square:.4f}")
+    print(f"SSIM (Square): {ssim_square:.4f}")
+
 # Generate images using 50 steps
-
-
-
-
 if selected_depth_path.endswith("nocrop.png"):
     output_non_square_50 = stable_diffusion(prompt=selected_prompt, image=non_square_depth, generator=seed, num_inference_steps=50)
     output_square_50 = stable_diffusion(prompt=selected_prompt, image=square_depth, generator=seed, num_inference_steps=50)
@@ -266,7 +334,7 @@ else:
     output_50 = stable_diffusion(prompt=selected_prompt, image=depth_image_resized, generator=seed, num_inference_steps=50)
     output_50.images[0].save("generated_image_50_steps.png")
     end_time_50 = time.time()
-    
+
     time_50_steps = end_time_50 - start_time_50
 
     start_time_100 = time.time()
@@ -275,8 +343,6 @@ else:
     end_time_100 = time.time()
 
     time_100_steps = end_time_100 - start_time_100
-
-
 
     fig, axes = plt.subplots(1, 3, figsize=(12, 6))
     axes[0].imshow(Image.open("generated_image.png"))
@@ -297,4 +363,5 @@ else:
     print(f"Image generation (25 steps) took {time_25_steps:.2f} seconds.")
     print(f"Image generation (50 steps) took {time_50_steps:.2f} seconds.")
     print(f"Image generation (100 steps) took {time_100_steps:.2f} seconds.")
+
 
