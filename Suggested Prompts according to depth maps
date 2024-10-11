@@ -1,0 +1,46 @@
+Provided Prompts
+        "beautiful landscape, mountains in the background",
+        "luxury bedroom interior",
+        "beautiful snowy mountains",
+        "luxurious bedroom interior",
+        "walls with cupboard",
+        "room with chair",
+        "house in the forest"
+
+For depth map 1.png - 
+        "A stunning alpine scene with snow-capped mountains towering in the background, lush green meadows in the foreground, dotted with wildflowers and a winding river cutting through.",
+        "Majestic mountains at dusk, the peaks glowing in the setting sun, with a calm lake reflecting the sky and trees scattered across a serene valley.",
+        "Early morning in the mountains, with mist rising from a deep forest below, a clear sky above, and jagged mountain peaks forming a dramatic backdrop.",
+        "Golden hour over a vast mountain range, with warm sunlight spilling over the peaks, and a valley below with a river winding through vibrant autumn foliage."
+
+For depth map 2.png and 2_nocrop.png- 
+        "A spacious bedroom with high ceilings, featuring a king-sized bed, modern design, floor-to-ceiling windows, and an elegant chandelier hanging in the center.",
+        "A luxurious bedroom with velvet curtains, a four-poster bed draped in silk, golden accents, and soft, warm lighting coming from intricately designed sconces on the walls.",
+        "An opulent bedroom with a grand canopy bed, rich hardwood floors, a large rug with intricate patterns, and a fireplace adding a touch of coziness to the luxurious space.",
+        "A modern luxury bedroom with minimalist design, featuring a floating bed, marble walls, sleek furniture, and expansive views of a city skyline from large windows."
+
+For depth map 3.png - 
+        "A serene winter landscape with towering snow-covered mountains under a bright blue sky, with a frozen lake reflecting the surrounding peaks.",
+        "Snow-capped mountains stretching across the horizon with fresh powder coating the ground, and a lone skier carving through the pristine snow under the midday sun.",
+        "A peaceful snowy mountain scene at dawn, with soft pink and orange hues lighting up the sky, and tall pines dusted with fresh snow surrounding a cozy cabin.",
+        "A breathtaking view of rugged mountains blanketed in snow, with swirling clouds and the sunlight piercing through, casting shadows across the peaks."
+For depth map 4.png - 
+        "A modern luxurious bedroom featuring a king-sized bed with velvet headboard, accent lighting, marble flooring, and floor-to-ceiling windows offering breathtaking city views.",
+        "A spacious bedroom with a vintage chandelier, hardwood flooring, a large walk-in closet, and plush bedding with silk sheets in a soft, calming color palette.",
+        "An elegant bedroom with a minimalist design, centered around a four-poster bed with rich wooden frames, soft mood lighting, and velvet curtains draped elegantly.",
+        "A lavish bedroom showcasing a gold-trimmed canopy bed, floor-length drapes, a crystal chandelier, and French windows opening up to a private balcony."
+For depth map 5.png - 
+        "A rustic room with wooden walls and a built-in cupboard filled with neatly arranged vintage books and décor items, with a wooden door slightly ajar.",
+        "A contemporary living space with exposed brick walls and a sleek, modern cupboard in matte black, housing a collection of fine china and glassware.",
+        "A cozy room with log cabin-style wooden walls, featuring a large cupboard painted white, filled with antique plates and decorative glass bottles.",
+        "An industrial-style living room with concrete walls, a minimalist white cupboard, and open shelves displaying plants, books, and decorative items."
+For depth map 6.png and 6.npy - 
+        "A modern minimalist room featuring a single chair in the center, with large windows allowing natural light to flood in, and a sleek bookshelf lining one wall.",
+        "A cozy reading nook with an oversized armchair, soft blankets draped over it, and a floor lamp casting a warm glow beside a large window looking out onto the garden.",
+        "A Scandinavian-inspired room with a clean white aesthetic, featuring a single wooden chair against a backdrop of soft pastel walls and a potted plant in the corner.",
+        "A bright, airy room with a comfortable armchair positioned by a floor-to-ceiling window, with a small table holding a book and a steaming cup of coffee beside it."
+For depth map 7.png and 7.npy - 
+        "A secluded wooden cabin nestled in the heart of a dense forest, surrounded by towering pine trees and a small creek running nearby.",
+        "A cozy log house deep in the forest, with smoke curling from the chimney, warm lights glowing from the windows, and snow lightly dusting the roof and ground.",
+        "A modern glass house in the middle of a lush green forest, with tall trees surrounding it and floor-to-ceiling windows offering uninterrupted views of nature.",
+        "An old, weathered stone house hidden deep within the forest, ivy crawling up the walls, with sunlight filtering through the dense canopy above."
