@@ -86,7 +86,7 @@ def choose_scheduler(stable_diffusion_pipeline):
     print("3. LMSDiscreteScheduler - High quality, moderate speed")
     print("4. EulerDiscreteScheduler - Moderate to high quality, fast")
     scheduler_choice = int(input("Select the scheduler number: "))
-    
+
     if scheduler_choice == 1:
         stable_diffusion_pipeline.scheduler = DDIMScheduler.from_config(stable_diffusion_pipeline.scheduler.config)
     elif scheduler_choice == 2:
@@ -189,15 +189,96 @@ else:
 
 # If using canny edges, generate canny edges from the depth image and also generate another image
 if use_canny:
-    depth_image_with_canny = generate_canny_edges(depth_image)
-    depth_image_with_canny_resized = depth_image_with_canny.resize((512, 512))
-    output_image_canny = stable_diffusion(prompt=selected_prompt, image=depth_image_with_canny_resized, generator=seed, num_inference_steps=10)
+        # Function to normalize depth maps
+    def normalize_depth_map(depth_map):
+        """Normalize depth map to a range of [0, 255]."""
+        min_val = np.min(depth_map)
+        max_val = np.max(depth_map)
+        depth_map_normalized = (depth_map - min_val) / (max_val - min_val) * 255
+        return Image.fromarray(depth_map_normalized.astype(np.uint8))
 
-    # Save and display the image generated using canny edges
-    output_image_canny.images[0].save("generated_image_canny.png")
-    plt.imshow(Image.open("generated_image_canny.png"))
-    plt.title("Generated Image (Canny Edges)")
-    plt.axis('off')  # Disable the axis/ruler
+    # Function to generate Canny edges
+    def generate_canny_edges(image, low_threshold=100, high_threshold=600):
+        """Generate Canny edges from the given image."""
+        image_gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
+        edges = cv2.Canny(image_gray, low_threshold, high_threshold)
+        edges_image = Image.fromarray(edges).convert("RGB")  # Convert edges back to RGB for blending
+        return edges_image
+
+    # Function for overlaying Canny edges on original image
+    def overlay_canny_on_image(original_image, canny_edges, alpha=0.4):
+        """Overlay Canny edges on the original image using alpha blending."""
+        combined_image = Image.blend(original_image, canny_edges, alpha)
+        return combined_image
+
+    # Function to apply morphological operations
+    def apply_morphological_operations(edges):
+        """Apply dilation to thicken the edges."""
+        kernel = np.ones((3, 3), np.uint8)
+        dilated_edges = cv2.dilate(np.array(edges.convert("L")), kernel, iterations=1)
+        return Image.fromarray(dilated_edges).convert("RGB")
+
+    # Function for multi-scale edge detection
+    def multi_scale_canny(image):
+        """Apply multi-scale Canny edge detection and combine the results."""
+        edges_1 = generate_canny_edges(image, low_threshold=50, high_threshold=150)
+        edges_2 = generate_canny_edges(image, low_threshold=100, high_threshold=200)
+        combined_edges = Image.blend(edges_1, edges_2, 0.5)
+        return combined_edges
+
+    # Function for combining with color information
+    def combine_with_color_info(image, canny_edges):
+        """Combine Canny edges with the original image by coloring the edges."""
+        image_array = np.array(image)
+        edges_array = np.array(canny_edges.convert("L"))
+        edges_colored = cv2.applyColorMap(edges_array, cv2.COLORMAP_JET)
+        combined_colored = cv2.addWeighted(image_array, 0.9, edges_colored, 0.8, 0)
+        return Image.fromarray(combined_colored)
+
+    # Function to perform image segmentation using Canny edges
+    def segment_image(edges):
+        """Use contours from Canny edges for segmentation."""
+        edges_gray = np.array(edges.convert("L"))
+        contours, _ = cv2.findContours(edges_gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        segmented = np.zeros_like(edges_gray)
+        cv2.drawContours(segmented, contours, -1, (255), thickness=cv2.FILLED)
+        return Image.fromarray(segmented).convert("RGB")
+
+    
+    
+    depth_map = Image.open(selected_depth_path).convert("RGB")
+
+    # Apply all the techniques in sequence with the same prompt
+    print("Applying all techniques...")
+
+    # Generate and display image with Canny Edges overlayed
+    canny_edges = generate_canny_edges(depth_map)
+    image_with_canny_overlay = overlay_canny_on_image(depth_map, canny_edges)
+    print("Image with Canny Edges Overlay:")
+    generated_image_canny_overlay = stable_diffusion(prompt=selected_prompt, image=image_with_canny_overlay, num_inference_steps=50).images[0]
+    plt.imshow(generated_image_canny_overlay)
+    plt.axis('off')
+    plt.title("Generated Image with Canny Edges Overlay")
+    plt.show()
+
+    # Combine depth map with Canny edges and generate image
+    image_combined = Image.blend(depth_map, canny_edges, alpha=0.3)
+    print("Image with Depth Map + Canny Edges Combined:")
+    generated_image_combined = stable_diffusion(prompt=selected_prompt, image=image_combined, num_inference_steps=50).images[0]
+    plt.imshow(generated_image_combined)
+    plt.axis('off')
+    plt.title("Generated Image with Depth Map + Canny Edges")
+    plt.show()
+
+
+
+    # Combine Canny edges with color information and generate image
+    colored_canny_image = combine_with_color_info(depth_map, canny_edges)
+    print("Colored Canny Edges:")
+    generated_image_colored = stable_diffusion(prompt=selected_prompt, image=colored_canny_image, num_inference_steps=50).images[0]
+    plt.imshow(generated_image_colored)
+    plt.axis('off')
+    plt.title("Generated Image with Colored Canny Edges")
     plt.show()
 
 depth_image_resized = depth_image.resize((512, 512))
@@ -313,7 +394,7 @@ else:
 
     time_100_steps = end_time_100 - start_time_100
 
-    fig, axes = plt.subplots(1, 3, figsize=(12, 6))
+    fig, axes = plt.subplots(1, 3, figsize=(20, 12))
     axes[0].imshow(Image.open("generated_image.png"))
     axes[0].set_title("25 Steps")
     axes[0].axis('off')  # Disable the axis/ruler
@@ -332,5 +413,3 @@ else:
     print(f"Image generation (25 steps) took {time_25_steps:.2f} seconds.")
     print(f"Image generation (50 steps) took {time_50_steps:.2f} seconds.")
     print(f"Image generation (100 steps) took {time_100_steps:.2f} seconds.")
-
-
