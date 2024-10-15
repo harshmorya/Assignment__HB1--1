@@ -1,3 +1,1 @@
-
-#Task 1: Generating the Best Possible Output Images
-#Objective: Generate images using the depth maps and other conditioning techniques like Canny edges or normals.
+[Dissecting Image Generation.docx](https://github.com/user-attachments/files/17371038/Dissecting.Image.Generation.docx)
