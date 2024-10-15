@@ -63,6 +63,39 @@ def resize_image_to_aspect_ratio(image_path, aspect_ratio):
 
     return image.resize(new_size)
 
+
+def crop_image(image, aspect_ratio):
+    """Crop image to specified aspect ratio."""
+    width, height = image.size
+
+    if aspect_ratio == "1:1":
+        new_size = min(width, height)
+        left = (width - new_size) // 2
+        top = (height - new_size) // 2
+        right = (width + new_size) // 2
+        bottom = (height + new_size) // 2
+    elif aspect_ratio == "4:3":
+        target_width = (height * 4) // 3
+        if target_width > width:
+            new_width = width
+            new_height = (width * 3) // 4
+            top = (height - new_height) // 2
+            left = 0
+            right = new_width
+            bottom = top + new_height
+        else:
+            new_width = target_width
+            new_height = height
+            left = (width - new_width) // 2
+            top = 0
+            right = left + new_width
+            bottom = height
+    else:
+        raise ValueError(f"Unsupported aspect ratio: {aspect_ratio}")
+
+    return image.crop((left, top, right, bottom))
+
+
 # Function to generate canny edges
 def generate_canny_edges(image, low_threshold=2, high_threshold=15):
     """Generate canny edges from the given image."""
@@ -178,9 +211,37 @@ if selected_depth_path.endswith("nocrop.png"):
     axes[2].set_title("4:3")
     axes[2].axis('off')  # Disable the axis/ruler
     plt.show()
+
+
+    # Crop images
+    cropped_square = crop_image(depth_image, "1:1")
+    cropped_43 = crop_image(depth_image, "4:3")
+
+    
+    
+    output_square_cropped = stable_diffusion(prompt=selected_prompt, image=cropped_square, num_inference_steps=50).images[0]
+    output_43_cropped = stable_diffusion(prompt=selected_prompt, image=cropped_43, num_inference_steps=50).images[0]
+
+    # Display images
+    fig, axes = plt.subplots(1, 2, figsize=(12, 12))
+
+    
+
+    axes[0].imshow(output_square_cropped)
+    axes[0].set_title("Cropped Square (1:1)")
+    axes[0].axis('off')
+
+    axes[1].imshow(output_43_cropped)
+    axes[1].set_title("Cropped 4:3")
+    axes[1].axis('off')
+
+    plt.show()
+
+
+
 else:
     depth_image_resized = depth_image.resize((512, 512))
-    output_image = stable_diffusion(prompt=selected_prompt, image=depth_image_resized, generator=seed, num_inference_steps=25)
+    output_image = stable_diffusion(prompt=selected_prompt, image=depth_image_resized, generator=seed, num_inference_steps=50)
 
     output_image.images[0].save("generated_image.png")
     plt.imshow(Image.open("generated_image.png"))
@@ -251,7 +312,7 @@ if use_canny:
     # Apply all the techniques in sequence with the same prompt
     print("Applying all techniques...")
 
-    # Generate and display image with Canny Edges overlayed
+    # 1. Generate and display image with Canny Edges overlayed
     canny_edges = generate_canny_edges(depth_map)
     image_with_canny_overlay = overlay_canny_on_image(depth_map, canny_edges)
     print("Image with Canny Edges Overlay:")
@@ -261,7 +322,7 @@ if use_canny:
     plt.title("Generated Image with Canny Edges Overlay")
     plt.show()
 
-    # Combine depth map with Canny edges and generate image
+    # 2. Combine depth map with Canny edges and generate image
     image_combined = Image.blend(depth_map, canny_edges, alpha=0.3)
     print("Image with Depth Map + Canny Edges Combined:")
     generated_image_combined = stable_diffusion(prompt=selected_prompt, image=image_combined, num_inference_steps=50).images[0]
@@ -272,7 +333,7 @@ if use_canny:
 
 
 
-    # Combine Canny edges with color information and generate image
+    # 6. Combine Canny edges with color information and generate image
     colored_canny_image = combine_with_color_info(depth_map, canny_edges)
     print("Colored Canny Edges:")
     generated_image_colored = stable_diffusion(prompt=selected_prompt, image=colored_canny_image, num_inference_steps=50).images[0]
@@ -287,7 +348,7 @@ end_time = time.time()
 print(f"Image generation took {end_time - start_time:.2f} seconds.")
 
 # Compare performance for 25 vs. 50 steps (you can add more if needed)
-print("\nComparing image generation times for 25 and 50 steps...")
+print("\nComparing image generation times for 25, 50, and 100 steps...")
 time_25_steps = end_time - start_time
 
 # Depth map comparison for non-square image
