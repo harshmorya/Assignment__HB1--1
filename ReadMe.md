@@ -1,5 +1,6 @@
 # Dissecting Image Generation with Stable Diffusion and ControlNet
-## For my detailed observations and analysis follow this word document - [Dissecting Image Generation.docx](https://github.com/user-attachments/files/17384395/Dissecting.Image.Generation.docx)
+## For my detailed observations and analysis follow this word document - [Dissecting Image Generation.docx](https://github.com/user-attachments/files/17393693/Dissecting.Image.Generation.docx)
+
 
 
 ## Project Overview
