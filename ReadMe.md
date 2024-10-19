@@ -150,6 +150,10 @@ Image generation (25 steps) took 5.42 seconds.
 Image generation (50 steps) took 10.82 seconds.
 Image generation (100 steps) took 20.57 seconds.
 ```
+### Generated depths are the same as the input depths.
+![image](https://github.com/user-attachments/assets/fea06a51-d403-4c45-822d-19952423f284)
+
+
 ## Results
 
 ### Task 1 Results
