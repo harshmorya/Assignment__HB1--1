@@ -68,15 +68,17 @@ pip install matplotlib
 For this task, I used the provided depth maps and applied various conditioning techniques such as Canny edges to enhance the output. I experimented with different configurations to generate the "best" possible images.
 
 #### Depth Map Only
-![image](https://github.com/user-attachments/assets/aec05e1a-8a82-443b-aada-8375600bcc19)
+<img src = "https://github.com/user-attachments/assets/aec05e1a-8a82-443b-aada-8375600bcc19" width =35% height = 35%>
 
 
 #### Depth Map and Canny Edges Overlay
-![image](https://github.com/user-attachments/assets/5c9641e5-4f8f-4ba4-a4bd-b67cbb3ad3b9)
+<img src = "https://github.com/user-attachments/assets/5c9641e5-4f8f-4ba4-a4bd-b67cbb3ad3b9" width =30% height = 30%>
+
 #### Depth Map + Canny Edges 
-![image](https://github.com/user-attachments/assets/8717b8ee-7f31-4208-891a-45fbc9269c50)
+<img src = "https://github.com/user-attachments/assets/8717b8ee-7f31-4208-891a-45fbc9269c50" width =30% height = 30%>
+
 #### Generated image using Colored canny images
-![image](https://github.com/user-attachments/assets/a9907aca-e437-44d8-90b6-e07c78f568bb)
+<img src = "https://github.com/user-attachments/assets/a9907aca-e437-44d8-90b6-e07c78f568bb" width =30% height = 30%>
 
 
 
