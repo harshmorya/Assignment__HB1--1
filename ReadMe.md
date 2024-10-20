@@ -68,8 +68,19 @@ pip install matplotlib
 For this task, I used the provided depth maps and applied various conditioning techniques such as Canny edges to enhance the output. I experimented with different configurations to generate the "best" possible images.
 
 #### Depth Map Only
+![image](https://github.com/user-attachments/assets/aec05e1a-8a82-443b-aada-8375600bcc19)
 
-#### Depth Map + Canny Edges
+
+#### Depth Map and Canny Edges Overlay
+![image](https://github.com/user-attachments/assets/5c9641e5-4f8f-4ba4-a4bd-b67cbb3ad3b9)
+#### Depth Map + Canny Edges 
+![image](https://github.com/user-attachments/assets/8717b8ee-7f31-4208-891a-45fbc9269c50)
+#### Generated image using Colored canny images
+![image](https://github.com/user-attachments/assets/a9907aca-e437-44d8-90b6-e07c78f568bb)
+
+
+
+
 
 #### Observations Across 25, 50, and 100 Steps
 
